@@ -18,6 +18,10 @@ jobs:
         with:
           version: latest
 
+      - name: Clone Raylib
+        run: |
+          git clone https://github.com/raysan5/raylib.git
+
       - name: Build Raylib (static, WASM)
         run: |
           cd raylib/src
