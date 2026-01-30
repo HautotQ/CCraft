@@ -1,0 +1,60 @@
+name: Build Raylib WASM
+
+on:
+  push:
+    branches: [ "main" ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Emscripten
+        uses: mymindstorm/setup-emsdk@v14
+        with:
+          version: latest
+
+      - name: Build Raylib (static, WASM)
+        run: |
+          cd raylib/src
+          emmake make PLATFORM=PLATFORM_WEB
+          cd ../..
+
+      - name: Compile project to WASM
+        run: |
+          mkdir -p web
+          emcc \
+            src/*.c \
+            main.c \
+            -I./src \
+            -I./raylib/src \
+            -L./raylib/src \
+            -lraylib \
+            -O3 \
+            -s USE_GLFW=3 \
+            -s ASYNCIFY \
+            -s ALLOW_MEMORY_GROWTH=1 \
+            -s MODULARIZE=1 \
+            -s EXPORT_ES6=1 \
+            -s ENVIRONMENT=web \
+            -o web/app.js
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: web
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+
+    steps:
+      - name: Deploy to GitHub Pages
+        uses: actions/deploy-pages@v4
